@@ -10,23 +10,16 @@ struct ContentView: View {
     @State private var inputURL: URL?
     @State private var statusText = "Ready"
     
-    // Твой ник в приложении
     let developerTag = "by kitanaizyxx"
     let modes = ["Linear", "Wide", "SuperView", "HyperView"]
     
     var body: some View {
         ZStack {
             Color.black.ignoresSafeArea()
-            Circle().fill(Color.blue.opacity(0.1)).blur(radius: 100).offset(y: -200)
-            
             VStack(spacing: 30) {
                 VStack(spacing: 5) {
-                    Text("123GOPRO STRETCH")
-                        .font(.system(size: 28, weight: .black, design: .monospaced))
-                        .foregroundColor(.blue)
-                    Text(developerTag)
-                        .font(.system(size: 12, design: .monospaced))
-                        .foregroundColor(.gray)
+                    Text("123GOPRO STRETCH").font(.system(size: 28, weight: .black, design: .monospaced)).foregroundColor(.blue)
+                    Text(developerTag).font(.system(size: 12, design: .monospaced)).foregroundColor(.gray)
                 }
                 
                 if !isProcessing {
@@ -45,7 +38,6 @@ struct ContentView: View {
                         Text(statusText).foregroundColor(.white).font(.caption)
                     }
                 }
-                Spacer().frame(height: 50)
             }
         }
         .sheet(isPresented: $showModeSelection) {
@@ -59,20 +51,22 @@ struct ContentView: View {
                         Text(mode).bold().frame(maxWidth: .infinity).padding().background(Color.blue).foregroundColor(.white).cornerRadius(12)
                     }.padding(.horizontal)
                 }
-                Spacer()
             }
             .presentationDetents([.medium])
         }
-        .onChange(of: selectedItem) { _ in handleSelection() }
+        .onChange(of: selectedItem) { _ in
+            handleSelection()
+        }
     }
     
     func handleSelection() {
         Task {
-            if let data = try? await selectedItem?.loadTransferable(type: Data.self) {
+            if let item = selectedItem,
+               let data = try? await item.loadTransferable(type: Data.self) {
                 let url = FileManager.default.temporaryDirectory.appendingPathComponent("input.mp4")
                 try? data.write(to: url)
-                inputURL = url
-                showModeSelection = true
+                self.inputURL = url
+                self.showModeSelection = true
             }
         }
     }
@@ -88,15 +82,7 @@ struct ContentView: View {
         
         let k: Float = (mode == "SuperView") ? 0.19 : (mode == "HyperView" ? 0.44 : 0.0)
         
-        let warpKernel = CIWarpKernel(source: """
-        kernel vec2 stretch(float width, float k) {
-            vec2 p = destCoord();
-            float x = p.x / width;
-            float normX = x * 2.0 - 1.0;
-            float distortedX = normX + sin(normX * 3.141592) * k;
-            return vec2((distortedX + 1.0) / 2.0 * width, p.y);
-        }
-        """)!
+        let warpKernel = CIWarpKernel(source: "kernel vec2 stretch(float width, float k) { vec2 p = destCoord(); float x = p.x / width; float normX = x * 2.0 - 1.0; float distortedX = normX + sin(normX * 3.141592) * k; return vec2((distortedX + 1.0) / 2.0 * width, p.y); }")!
 
         let composition = AVMutableVideoComposition(asset: asset) { request in
             let source = request.sourceImage
@@ -126,13 +112,7 @@ struct ContentView: View {
         exporter.outputFileType = .mp4
         
         exporter.exportAsynchronously {
-            if exporter.status == .completed {
-                PHPhotoLibrary.shared().performChanges {
-                    PHAssetChangeRequest.creationRequestForAssetFromVideo(atFileURL: outputURL)
-                } completionHandler: { _, _ in
-                    DispatchQueue.main.async { self.isProcessing = false }
-                }
-            }
+            DispatchQueue.main.async { self.isProcessing = false }
         }
     }
 }
