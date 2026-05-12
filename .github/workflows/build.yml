@@ -1,1 +1,46 @@
+name: Build IPA
+on: 
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Install Tools
+        run: brew install xcodegen
+
+      - name: Create Project Config
+        run: |
+          echo "name: GoproStretch
+          targets:
+            GoproStretch:
+              type: application
+              platform: iOS
+              deploymentTarget: '15.0'
+              sources: [ContentView.swift]
+              info:
+                path: Info.plist
+                properties:
+                  NSPhotoLibraryUsageDescription: 'Need photos'
+                  NSPhotoLibraryAddUsageDescription: 'Save video'" > project.yml
+
+      - name: Generate Xcode Project
+        run: xcodegen generate
+
+      - name: Build App
+        run: |
+          xcodebuild build -project GoproStretch.xcodeproj -scheme GoproStretch -sdk iphoneos CODE_SIGNING_ALLOWED=NO
+          mkdir Payload
+          cp -r build/Release-iphoneos/GoproStretch.app Payload/ || cp -r ~/Library/Developer/Xcode/DerivedData/*/Build/Products/Release-iphoneos/GoproStretch.app Payload/
+          zip -r GoproStretch.ipa Payload
+
+      - name: Upload IPA
+        uses: actions/upload-artifact@v3
+        with:
+          name: GoProApp-kitanaizyxx
+          path: GoproStretch.ipa
 
