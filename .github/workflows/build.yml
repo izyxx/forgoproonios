@@ -23,10 +23,11 @@ jobs:
         run: |
           brew install xcodegen
           xcodegen generate
-          xcodebuild build -project GoproStretch.xcodeproj -scheme GoproStretch -sdk iphoneos CODE_SIGNING_ALLOWED=NO
+          xcodebuild build -project GoproStretch.xcodeproj -scheme GoproStretch -sdk iphoneos CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO
           
           mkdir -p Payload
-          APP_PATH=$(find . -name "*.app" | head -n 1)
+          # Ищем приложение в папке сборки
+          APP_PATH=$(find . -name "GoproStretch.app" -type d | head -n 1)
           cp -r "$APP_PATH" Payload/
           zip -r GoproStretch.ipa Payload
 
