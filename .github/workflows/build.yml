@@ -1,17 +1,11 @@
 name: Build IPA
-on: 
-  push:
-    branches: [ main ]
-  workflow_dispatch:
+on: [push, workflow_dispatch]
 
 jobs:
   build:
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v3
-      
-      - name: Install Tools
-        run: brew install xcodegen
+      - uses: actions/checkout@v4
 
       - name: Create Project Config
         run: |
@@ -23,24 +17,21 @@ jobs:
               deploymentTarget: '15.0'
               sources: [ContentView.swift]
               info:
-                path: Info.plist
-                properties:
-                  NSPhotoLibraryUsageDescription: 'Need photos'
-                  NSPhotoLibraryAddUsageDescription: 'Save video'" > project.yml
+                path: Info.plist" > project.yml
 
-      - name: Generate Xcode Project
-        run: xcodegen generate
-
-      - name: Build App
+      - name: Generate and Build
         run: |
+          brew install xcodegen
+          xcodegen generate
           xcodebuild build -project GoproStretch.xcodeproj -scheme GoproStretch -sdk iphoneos CODE_SIGNING_ALLOWED=NO
-          mkdir Payload
-          cp -r build/Release-iphoneos/GoproStretch.app Payload/ || cp -r ~/Library/Developer/Xcode/DerivedData/*/Build/Products/Release-iphoneos/GoproStretch.app Payload/
+          
+          mkdir -p Payload
+          APP_PATH=$(find . -name "*.app" | head -n 1)
+          cp -r "$APP_PATH" Payload/
           zip -r GoproStretch.ipa Payload
 
       - name: Upload IPA
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: GoProApp-kitanaizyxx
+          name: GoproApp-kitanaizyxx
           path: GoproStretch.ipa
-
