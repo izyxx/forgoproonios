@@ -7,33 +7,24 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Create Project Config
+      - name: Compile iOS Binary
         run: |
-          echo "name: GoproStretch
-          targets:
-            GoproStretch:
-              type: application
-              platform: iOS
-              deploymentTarget: '16.0'
-              sources: [ContentView.swift]
-              info:
-                path: Info.plist" > project.yml
+          xcrun -sdk iphoneos swiftc ContentView.swift \
+          -target arm64-apple-ios16.0 \
+          -o GoproToolBin \
+          -sdk $(xcrun --sdk iphoneos --show-sdk-path) \
+          -emit-executable
 
-      - name: Generate and Build
+      - name: Create IPA Structure
         run: |
-          brew install xcodegen
-          xcodegen generate
-          # Используем archive — это надежнее для создания IPA
-          xcodebuild archive -project GoproStretch.xcodeproj -scheme GoproStretch -archivePath GoproStretch.xcarchive -sdk iphoneos CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO
-          
-          mkdir -p Payload
-          # Ищем само приложение внутри архива
-          APP_PATH=$(find GoproStretch.xcarchive -name "*.app" -type d | head -n 1)
-          cp -r "$APP_PATH" Payload/
-          zip -r GoproStretch.ipa Payload
+          mkdir -p Payload/GoproTool.app
+          mv GoproToolBin Payload/GoproTool.app/GoproTool
+          cp Info.plist Payload/GoproTool.app/Info.plist
+          echo "APPL????" > Payload/GoproTool.app/PkgInfo
+          zip -r GoproTool.ipa Payload
 
-      - name: Upload IPA
+      - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
           name: GoproApp-kitanaizyxx
-          path: GoproStretch.ipa
+          path: GoproTool.ipa
