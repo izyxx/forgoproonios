@@ -3,7 +3,6 @@ import PhotosUI
 import AVFoundation
 import CoreImage
 
-@available(iOS 16.0, *)
 struct ContentView: View {
     @State private var selectedItem: PhotosPickerItem?
     @State private var isProcessing = false
@@ -89,7 +88,7 @@ struct ContentView: View {
             let source = request.sourceImage
             let w = source.extent.width
             let h = source.extent.height
-            let targetW = h * (16.0/9.0)
+            let targetW = h * (16/9)
             
             if mode == "Wide" {
                 let rect = CGRect(x: 0, y: (h - (w * 9 / 16)) / 2, width: w, height: w * 9 / 16)
@@ -110,6 +109,16 @@ struct ContentView: View {
         
         exporter?.exportAsynchronously {
             DispatchQueue.main.async { self.isProcessing = false }
+        }
+    }
+}
+
+// ТОЧКА ВХОДА (ОБЯЗАТЕЛЬНО)
+@main
+struct GoproStretchApp: App {
+    var body: some Scene {
+        WindowGroup {
+            ContentView()
         }
     }
 }
