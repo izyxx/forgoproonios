@@ -14,7 +14,7 @@ jobs:
             GoproStretch:
               type: application
               platform: iOS
-              deploymentTarget: '15.0'
+              deploymentTarget: '16.0'
               sources: [ContentView.swift]
               info:
                 path: Info.plist" > project.yml
